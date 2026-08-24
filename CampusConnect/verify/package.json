@@ -1,0 +1,21 @@
+{
+  "name": "campusconnect-verify",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-campus-connect",
+    "demo:auth": "node scripts/01_auth_and_firestore.js",
+    "demo:realtime": "node scripts/02_realtime_sync.js",
+    "demo:offline": "node scripts/03_offline_queue.js",
+    "demo:jwt": "node scripts/04_jwt_session.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "firebase": "^12.17.0",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

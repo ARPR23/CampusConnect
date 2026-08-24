@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function actualRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // Each authenticated user has exactly one profile document,
+    // keyed by their own uid, holding their role (student|faculty).
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId)
+                    && request.resource.data.role in ['student', 'faculty'];
+      allow update: if isOwner(userId)
+                    && request.resource.data.role == resource.data.role; // role is immutable after signup
+      allow delete: if false;
+    }
+
+    // Announcements: any signed-in student/faculty member can read
+    // (so the client can cache them for offline viewing), but only
+    // the authenticated author may create their own post, and only
+    // that author may edit/delete it afterwards.
+    match /announcements/{postId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.authorRole == actualRole() // can't claim to be faculty
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 2000
+                    && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if isSignedIn()
+                    && resource.data.authorId == request.auth.uid;
+    }
+  }
+}
